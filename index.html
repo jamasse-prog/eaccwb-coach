@@ -6,12 +6,10 @@
 <title>Coach U9 — Suivi de progression</title>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.6.0/dist/tabler-icons.min.css">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script type="module">
-// ── Firebase ──────────────────────────────────────────────────
-import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
-import { getFirestore, doc, getDoc, setDoc, collection, getDocs, deleteDoc, onSnapshot }
-  from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
-
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+<script>
+// ── Firebase config ───────────────────────────────────────────
 const firebaseConfig = {
   apiKey: "AIzaSyACbMoaK9XWq74ZLW4ItPm7LEmMdDsy2Q8",
   authDomain: "eaccwb.firebaseapp.com",
@@ -21,34 +19,27 @@ const firebaseConfig = {
   appId: "1:338558896424:web:95ba8d386347818f2ba81d",
   measurementId: "G-4EGNYSHDPN"
 };
+firebase.initializeApp(firebaseConfig);
+const db = firebase.firestore();
 
-const fbApp = initializeApp(firebaseConfig);
-const db   = getFirestore(fbApp);
-
-// ── Firebase helpers ──────────────────────────────────────────
-// Toutes les données sont stockées dans un seul document par clé
-// Collection: "app" / document: la clé (club, exercices, saisons_list, etc.)
-// Les données par saison: "app" / "joueurs_saisonId", "seances_saisonId", etc.
-
+// ── Firebase helpers (accessibles globalement) ────────────────
 async function fbGet(key) {
   try {
-    const snap = await getDoc(doc(db, 'app', key));
-    return snap.exists() ? snap.data().value : null;
+    const snap = await db.collection('app').doc(key).get();
+    return snap.exists ? snap.data().value : null;
   } catch(e) { console.warn('fbGet error', key, e); return null; }
 }
 
 async function fbSet(key, value) {
   try {
-    await setDoc(doc(db, 'app', key), { value });
-    ls(key, value); // sync local cache
+    await db.collection('app').doc(key).set({ value });
   } catch(e) { console.warn('fbSet error', key, e); }
 }
 
-// Charge toutes les données Firebase dans localStorage au démarrage
 async function loadAllFromFirebase() {
   showLoadingOverlay(true);
   try {
-    const snap = await getDocs(collection(db, 'app'));
+    const snap = await db.collection('app').get();
     snap.forEach(d => {
       try { localStorage.setItem(d.id, JSON.stringify(d.data().value)); } catch(e){}
     });
@@ -68,11 +59,8 @@ async function loadAllFromFirebase() {
   }
 }
 
-// Override ls() write to also write to Firebase
-const _lsOrig = window._lsWrite;
+// Expose fbSet globally so ls() can call it
 window._fbSet = fbSet;
-
-loadAllFromFirebase();
 </script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -1679,8 +1667,7 @@ function restaurer(event) {
 
 document.getElementById('seance-modal').addEventListener('click', function(e) { if(e.target===this) closeSeanceModal(); });
 
-// ── Init appelé par Firebase après chargement ────────────────
-// (voir le bloc <script type="module"> dans le head)
+// ── Init appelé par Firebase (loadAllFromFirebase) ─────────
 </script>
 
 <div id="loading-overlay" style="

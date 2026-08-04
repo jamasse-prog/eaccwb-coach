@@ -1,0 +1,564 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>EACCWB Cysoing — Suivi équipe</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.6.0/dist/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --red:#CC0000;--red-light:#fde8e8;--red-mid:#aa0000;
+  --text:#1a1a1a;--muted:#6b7280;--border:#e5e7eb;
+  --bg:#f5f5f5;--white:#ffffff;
+  --radius:10px;--radius-lg:16px;
+}
+body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh}
+
+/* HEADER */
+.header{background:#1a1a1a;padding:16px 24px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;position:sticky;top:0;z-index:10}
+.header-left{display:flex;align-items:center;gap:14px}
+.header-logo{width:48px;height:48px;object-fit:contain}
+.header-title{color:#fff;font-size:16px;font-weight:700;line-height:1.3}
+.header-sub{color:rgba(255,255,255,0.5);font-size:12px;margin-top:2px}
+.header-badge{background:var(--red);color:#fff;font-size:11px;font-weight:600;padding:4px 12px;border-radius:20px}
+
+/* LAYOUT */
+.container{max-width:900px;margin:0 auto;padding:24px 16px}
+
+/* TABS */
+.tabs{display:flex;gap:4px;background:var(--white);border-radius:12px;padding:4px;margin-bottom:24px;border:1px solid var(--border)}
+.tab{flex:1;padding:9px 12px;border-radius:9px;font-size:13px;font-weight:500;cursor:pointer;color:var(--muted);border:none;background:transparent;transition:all .15s;text-align:center}
+.tab.active{background:#1a1a1a;color:#fff}
+
+/* CARDS */
+.card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px}
+.card-title{font-size:15px;font-weight:600;margin-bottom:4px}
+.card-sub{font-size:12px;color:var(--muted);margin-bottom:16px}
+
+/* STATS */
+.stat-row{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:20px}
+.stat-box{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:14px;text-align:center}
+.stat-val{font-size:22px;font-weight:700;color:var(--red)}
+.stat-label{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* JOUEURS */
+.players-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:10px}
+.player-card{background:var(--white);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px;text-align:center;cursor:pointer;transition:all .15s}
+.player-card:hover{border-color:var(--red);box-shadow:0 2px 8px rgba(204,0,0,0.1)}
+.player-card.selected{border-color:var(--red);border-width:2px;background:var(--red-light)}
+.player-avatar{width:44px;height:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;margin:0 auto 8px}
+.player-name{font-size:12px;font-weight:600}
+.player-pos{font-size:10px;color:var(--muted);margin-top:3px}
+.av-0{background:#fde8e8;color:#CC0000}.av-1{background:#e8eef8;color:#1a3f6b}
+.av-2{background:#fff3d6;color:#92500a}.av-3{background:#fce8f0;color:#6b1a3f}
+.av-4{background:#ede8fc;color:#3a1a6b}.av-5{background:#e0f4f1;color:#0d5c52}
+.av-6{background:#fef9c3;color:#713f12}.av-7{background:#fce7f3;color:#831843}
+
+/* EXERCICES */
+.exo-list{display:flex;flex-direction:column;gap:8px}
+.exo-row{background:var(--white);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:space-between}
+.exo-row:hover{border-color:var(--red)}
+.exo-row.selected{border-color:var(--red);border-width:2px;background:var(--red-light)}
+.exo-name{font-size:13px;font-weight:600}
+.exo-meta{font-size:11px;color:var(--muted);margin-top:2px}
+.tag{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:var(--red-light);color:var(--red)}
+
+/* PROGRESSION */
+.prog-filters{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin-bottom:16px}
+.prog-filters label{font-size:12px;color:var(--muted);font-weight:500}
+.prog-filters select{padding:7px 12px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:var(--white);outline:none}
+.prog-filters select:focus{border-color:var(--red)}
+
+/* TABLEAU */
+.results-table{width:100%;border-collapse:collapse;font-size:13px}
+.results-table th{padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--muted);background:var(--bg);border-bottom:1px solid var(--border)}
+.results-table td{padding:10px 14px;border-bottom:1px solid var(--border)}
+.evol-up{color:#CC0000;font-weight:600}
+.evol-down{color:#16a34a;font-weight:600}
+
+/* EMPTY */
+.empty{text-align:center;padding:48px 20px;color:var(--muted)}
+.empty i{font-size:36px;display:block;margin-bottom:12px}
+.empty-title{font-size:14px;font-weight:500;color:var(--text);margin-bottom:4px}
+
+/* LOADING */
+#loading-overlay{position:fixed;inset:0;background:#1a1a1a;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px}
+.spinner{width:48px;height:48px;border:5px solid rgba(204,0,0,0.3);border-top-color:#CC0000;border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* MOBILE */
+@media(max-width:600px){
+  .header{padding:12px 16px}
+  .container{padding:16px 12px}
+  .stat-val{font-size:18px}
+}
+</style>
+</head>
+<body>
+
+<!-- LOADING -->
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <div style="color:#fff;font-size:14px;font-weight:500">Chargement de l'équipe...</div>
+</div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-left">
+    <div style="width:48px;height:48px;background:transparent">
+      <!-- Logo inline depuis index.html — remplacé dynamiquement si besoin -->
+      <div style="width:48px;height:48px;background:#CC0000;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:22px">⚽</div>
+    </div>
+    <div>
+      <div class="header-title" id="h-club">EACCWB Cysoing</div>
+      <div class="header-sub" id="h-saison">Chargement...</div>
+    </div>
+  </div>
+  <div class="header-badge" id="h-badge">Vue parents</div>
+</div>
+
+<div class="container">
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('equipe')"><i class="ti ti-users"></i> Équipe</button>
+    <button class="tab" onclick="showTab('progression')"><i class="ti ti-chart-line"></i> Progression</button>
+    <button class="tab" onclick="showTab('seances')"><i class="ti ti-calendar"></i> Séances</button>
+  </div>
+
+  <!-- TAB EQUIPE -->
+  <div id="tab-equipe">
+    <div class="stat-row" id="equipe-stats"></div>
+    <div class="card">
+      <div class="card-title">Joueurs de l'équipe</div>
+      <div class="card-sub">Cliquez sur un joueur pour voir sa fiche</div>
+      <div class="players-grid" id="players-grid"></div>
+    </div>
+    <div class="card" id="joueur-detail" style="display:none">
+      <div id="joueur-detail-content"></div>
+    </div>
+  </div>
+
+  <!-- TAB PROGRESSION -->
+  <div id="tab-progression" style="display:none">
+    <div class="card">
+      <div class="prog-filters">
+        <div>
+          <label>Exercice</label>
+          <select id="prog-exo" onchange="renderProgParents()" style="margin-left:8px"></select>
+        </div>
+        <div>
+          <label>Joueur</label>
+          <select id="prog-joueur" onchange="renderProgParents()" style="margin-left:8px">
+            <option value="tous">Toute l'équipe</option>
+          </select>
+        </div>
+      </div>
+      <canvas id="prog-canvas" height="280"></canvas>
+    </div>
+    <div class="card" id="prog-table-wrap" style="padding:0;overflow:hidden">
+      <table class="results-table" id="prog-table"></table>
+    </div>
+  </div>
+
+  <!-- TAB SEANCES -->
+  <div id="tab-seances" style="display:none">
+    <div id="seances-list"></div>
+  </div>
+
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+import { getFirestore, collection, getDocs }
+  from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyACbMoaK9XWq74ZLW4ItPm7LEmMdDsy2Q8",
+  authDomain: "eaccwb.firebaseapp.com",
+  projectId: "eaccwb",
+  storageBucket: "eaccwb.firebasestorage.app",
+  messagingSenderId: "338558896424",
+  appId: "1:338558896424:web:95ba8d386347818f2ba81d",
+  measurementId: "G-4EGNYSHDPN"
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const db = getFirestore(fbApp);
+
+// Charge toutes les données depuis Firebase
+let DATA = {};
+async function loadData() {
+  try {
+    const snap = await getDocs(collection(db, 'app'));
+    snap.forEach(d => { DATA[d.id] = d.data().value; });
+    console.log('Loaded keys:', Object.keys(DATA));
+  } catch(e) {
+    console.error('Firebase error:', e);
+    document.getElementById('loading-overlay').innerHTML =
+      '<div style="color:#fff;text-align:center;padding:20px"><div style="font-size:24px;margin-bottom:12px">⚠️</div><div>Impossible de charger les données</div></div>';
+    return;
+  }
+  document.getElementById('loading-overlay').style.display = 'none';
+  initApp();
+}
+
+function get(key) { return DATA[key] || null; }
+function saisonKey(key, sid) {
+  const id = sid || activeSaisonId();
+  return key + '_' + id;
+}
+function activeSaisonId() {
+  const id = get('saison_active');
+  const saisons = get('saisons_list') || [];
+  return id || (saisons[0] || {}).id || 'default';
+}
+function getJoueurs(sid) { return get(saisonKey('joueurs', sid)) || []; }
+function getSeances(sid) { return get(saisonKey('seances', sid)) || []; }
+function getEvals(sid)   { return get(saisonKey('evaluations', sid)) || []; }
+function getExos()       { return get('exercices') || []; }
+function getClub()       { return get('club') || {}; }
+function getSaisons()    { return get('saisons_list') || []; }
+
+const CHART_COLORS = ['#CC0000','#1a1a1a','#378ADD','#D85A30','#7F77DD','#1D9E75','#D4537E','#0d5c52'];
+let progChart = null;
+
+function initApp() {
+  const club = getClub();
+  const saisons = getSaisons();
+  const activeSid = activeSaisonId();
+  const activeSaison = saisons.find(s => s.id === activeSid) || saisons[0];
+
+  document.getElementById('h-club').textContent = club.nom || 'EACCWB Cysoing';
+  document.getElementById('h-saison').textContent = activeSaison ? activeSaison.label : 'Saison en cours';
+  document.getElementById('h-badge').textContent = activeSaison ? activeSaison.cat : 'Vue parents';
+
+  renderEquipe();
+  initProgSelects();
+  renderSeances();
+}
+
+// ── TAB NAVIGATION ─────────────────────────────────────────────
+window.showTab = function(name) {
+  ['equipe','progression','seances'].forEach(t => {
+    document.getElementById('tab-'+t).style.display = t===name ? '' : 'none';
+  });
+  document.querySelectorAll('.tab').forEach((btn,i) => {
+    btn.classList.toggle('active', ['equipe','progression','seances'][i]===name);
+  });
+};
+
+// ── ÉQUIPE ─────────────────────────────────────────────────────
+function renderEquipe() {
+  const joueurs = getJoueurs();
+  const seances = getSeances();
+  const evals = getEvals();
+  const exos = getExos();
+
+  // Stats
+  const postes = new Set(joueurs.map(j=>j.poste).filter(Boolean));
+  document.getElementById('equipe-stats').innerHTML = `
+    <div class="stat-box"><div class="stat-val">${joueurs.length}</div><div class="stat-label">Joueurs</div></div>
+    <div class="stat-box"><div class="stat-val">${seances.length}</div><div class="stat-label">Séances</div></div>
+    <div class="stat-box"><div class="stat-val">${exos.length}</div><div class="stat-label">Exercices</div></div>
+    <div class="stat-box"><div class="stat-val">${evals.length}</div><div class="stat-label">Évaluations</div></div>
+  `;
+
+  // Grille joueurs
+  const grid = document.getElementById('players-grid');
+  grid.innerHTML = '';
+  if (!joueurs.length) {
+    grid.innerHTML = '<div class="empty"><i class="ti ti-users"></i><div class="empty-title">Aucun joueur enregistré</div></div>';
+    return;
+  }
+  joueurs.forEach((j, i) => {
+    const ini = ((j.prenom||'')[0]||'').toUpperCase() + ((j.nom||'')[0]||'').toUpperCase();
+    const card = document.createElement('div');
+    card.className = 'player-card';
+    card.innerHTML = `
+      <div class="player-avatar av-${i%8}">${ini}</div>
+      <div class="player-name">${j.prenom} ${j.nom}</div>
+      <div class="player-pos">${j.poste || '—'}</div>
+    `;
+    card.onclick = () => showJoueurDetail(i);
+    grid.appendChild(card);
+  });
+}
+
+function showJoueurDetail(ji) {
+  const joueurs = getJoueurs();
+  const j = joueurs[ji];
+  const evals = getEvals();
+  const exos = getExos();
+  const seances = getSeances();
+  if (!j) return;
+
+  // Unselect all, select this
+  document.querySelectorAll('.player-card').forEach((c,i) => c.classList.toggle('selected', i===ji));
+
+  const ini = ((j.prenom||'')[0]||'').toUpperCase() + ((j.nom||'')[0]||'').toUpperCase();
+  const joueurEvals = evals.filter(ev => ev.joueurIdx === ji);
+
+  // Group by exercice
+  const byExo = {};
+  joueurEvals.forEach(ev => {
+    if (!byExo[ev.exoId]) byExo[ev.exoId] = [];
+    byExo[ev.exoId].push(ev);
+  });
+
+  let tableRows = '';
+  Object.entries(byExo).forEach(([exoId, evs]) => {
+    const exo = exos.find(e => e.id == exoId);
+    if (!exo) return;
+    const sorted = evs.map(ev => ({
+      ...ev,
+      date: (seances.find(s => s.id === ev.seanceId) || {}).date || ''
+    })).sort((a,b) => a.date.localeCompare(b.date));
+
+    const first = sorted[0]?.valeur;
+    const last = sorted[sorted.length-1]?.valeur;
+    let evol = '—';
+    if (first != null && last != null && first !== last) {
+      const diff = last - first;
+      const pct = ((Math.abs(diff)/first)*100).toFixed(1);
+      const better = exo.sens === 'min' ? diff < 0 : diff > 0;
+      evol = `<span class="${better ? 'evol-down' : 'evol-up'}">${better ? '▲' : '▼'} ${pct}%</span>`;
+    }
+    tableRows += `<tr>
+      <td style="font-weight:500">${exo.nom}</td>
+      <td style="text-align:center">${sorted.length}</td>
+      <td style="text-align:center">${last ?? '—'} ${exo.unite}</td>
+      <td style="text-align:center">${evol}</td>
+    </tr>`;
+  });
+
+  const detail = document.getElementById('joueur-detail');
+  const content = document.getElementById('joueur-detail-content');
+  content.innerHTML = `
+    <div style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+      <div class="player-avatar av-${ji%8}" style="width:52px;height:52px;font-size:18px;flex-shrink:0">${ini}</div>
+      <div>
+        <div style="font-size:17px;font-weight:700">${j.prenom} ${j.nom}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${j.poste||'—'} ${j.dob ? '· né le '+new Date(j.dob+'T12:00:00').toLocaleDateString('fr-FR') : ''}</div>
+      </div>
+    </div>
+    ${tableRows ? `
+    <table class="results-table">
+      <thead><tr>
+        <th>Exercice</th><th style="text-align:center">Séances</th>
+        <th style="text-align:center">Dernier résultat</th><th style="text-align:center">Évolution</th>
+      </tr></thead>
+      <tbody>${tableRows}</tbody>
+    </table>` : '<div style="color:var(--muted);font-size:13px">Aucune évaluation enregistrée pour ce joueur.</div>'}
+  `;
+  detail.style.display = '';
+  detail.scrollIntoView({behavior:'smooth', block:'nearest'});
+}
+
+// ── PROGRESSION ────────────────────────────────────────────────
+function initProgSelects() {
+  const exos = getExos();
+  const joueurs = getJoueurs();
+
+  const exoSel = document.getElementById('prog-exo');
+  exoSel.innerHTML = '<option value="">— choisir un exercice —</option>';
+  exos.forEach(e => { exoSel.innerHTML += `<option value="${e.id}">${e.nom}</option>`; });
+
+  const joueurSel = document.getElementById('prog-joueur');
+  joueurSel.innerHTML = '<option value="tous">Toute l\'équipe</option>';
+  joueurs.forEach((j,i) => { joueurSel.innerHTML += `<option value="${i}">${j.prenom} ${j.nom}</option>`; });
+}
+
+window.renderProgParents = function() {
+  const exoId = parseInt(document.getElementById('prog-exo').value);
+  const joueurIdx = document.getElementById('prog-joueur').value;
+  const exos = getExos();
+  const exo = exos.find(e => e.id === exoId);
+  const evals = getEvals();
+  const seances = getSeances().sort((a,b) => a.date.localeCompare(b.date));
+  const joueurs = getJoueurs();
+
+  if (!exo) { if (progChart) { progChart.destroy(); progChart = null; } return; }
+
+  const exoEvals = evals.filter(ev => ev.exoId === exoId);
+  const seancesAvecData = seances.filter(s => exoEvals.some(ev => ev.seanceId === s.id));
+  const labels = seancesAvecData.map(s => new Date(s.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'}));
+
+  const joueursFiltres = joueurIdx === 'tous' ? joueurs.map((_,i)=>i) : [parseInt(joueurIdx)];
+
+  const datasets = joueursFiltres.map((ji, ci) => {
+    const j = joueurs[ji];
+    if (!j) return null;
+    return {
+      label: `${j.prenom} ${j.nom}`,
+      data: seancesAvecData.map(s => {
+        const ev = exoEvals.find(ev => ev.seanceId === s.id && ev.joueurIdx === ji);
+        return ev ? ev.valeur : null;
+      }),
+      borderColor: CHART_COLORS[ci % CHART_COLORS.length],
+      backgroundColor: CHART_COLORS[ci % CHART_COLORS.length] + '20',
+      borderWidth: 2.5, pointRadius: 5, tension: 0.3, spanGaps: true,
+    };
+  }).filter(Boolean);
+
+  // Ligne moyenne
+  datasets.push({
+    label: 'Moyenne équipe',
+    data: seancesAvecData.map(s => {
+      const vals = exoEvals.filter(ev => ev.seanceId === s.id).map(ev => ev.valeur);
+      return vals.length ? +(vals.reduce((a,b)=>a+b,0)/vals.length).toFixed(2) : null;
+    }),
+    borderColor: '#9ca3af', borderDash: [6,4], borderWidth: 2,
+    pointRadius: 3, tension: 0.3, spanGaps: true, fill: false,
+  });
+
+  if (progChart) { progChart.destroy(); progChart = null; }
+  const ctx = document.getElementById('prog-canvas').getContext('2d');
+  progChart = new Chart(ctx, {
+    type: 'line',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { position: 'bottom', labels: { font:{size:12}, padding:14, usePointStyle:true }},
+        tooltip: { callbacks: { label: ctx => ` ${ctx.dataset.label} : ${ctx.parsed.y} ${exo.unite}` }}
+      },
+      scales: {
+        y: { reverse: exo.sens==='min', grid:{color:'#e5e7eb'}, ticks:{font:{size:11}} },
+        x: { grid:{display:false}, ticks:{font:{size:11}} }
+      }
+    }
+  });
+
+  // Tableau
+  const table = document.getElementById('prog-table');
+  let html = '<thead><tr style="background:var(--bg)">';
+  html += '<th style="padding:10px 14px">Joueur</th>';
+  seancesAvecData.forEach(s => {
+    html += `<th style="padding:10px 14px;text-align:center">${new Date(s.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'})}</th>`;
+  });
+  if (seancesAvecData.length > 1) html += '<th style="padding:10px 14px;text-align:center">Évolution</th>';
+  html += '</tr></thead><tbody>';
+
+  joueursFiltres.forEach(ji => {
+    const j = joueurs[ji]; if (!j) return;
+    const ini = ((j.prenom||'')[0]||'').toUpperCase()+((j.nom||'')[0]||'').toUpperCase();
+    html += `<tr><td style="padding:10px 14px;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:8px">
+        <div class="player-avatar av-${ji%8}" style="width:30px;height:30px;font-size:11px;margin:0;flex-shrink:0">${ini}</div>
+        <span style="font-size:13px;font-weight:500">${j.prenom} ${j.nom}</span>
+      </div></td>`;
+    const vals = seancesAvecData.map(s => {
+      const ev = exoEvals.find(ev => ev.seanceId===s.id && ev.joueurIdx===ji);
+      return ev ? ev.valeur : null;
+    });
+    vals.forEach(v => { html += `<td style="padding:10px 14px;text-align:center;font-size:13px;border-bottom:1px solid var(--border)">${v??'—'}</td>`; });
+    if (seancesAvecData.length > 1) {
+      const first = vals.find(v=>v!=null);
+      const last = vals.filter(v=>v!=null).slice(-1)[0];
+      let evol = '<span style="color:var(--muted)">—</span>';
+      if (first != null && last != null && first !== last) {
+        const diff = last - first;
+        const pct = ((Math.abs(diff)/first)*100).toFixed(1);
+        const better = exo.sens === 'min' ? diff < 0 : diff > 0;
+        evol = `<span class="${better?'evol-down':'evol-up'}">${better?'▲':'▼'} ${pct}%</span>`;
+      }
+      html += `<td style="padding:10px 14px;text-align:center;border-bottom:1px solid var(--border)">${evol}</td>`;
+    }
+    html += '</tr>';
+  });
+  html += '</tbody>';
+  table.innerHTML = html;
+};
+
+// ── SÉANCES ────────────────────────────────────────────────────
+function renderSeances() {
+  const seances = getSeances().sort((a,b) => b.date.localeCompare(a.date));
+  const evals = getEvals();
+  const exos = getExos();
+  const joueurs = getJoueurs();
+  const wrap = document.getElementById('seances-list');
+
+  if (!seances.length) {
+    wrap.innerHTML = '<div class="empty"><i class="ti ti-calendar-off"></i><div class="empty-title">Aucune séance enregistrée</div></div>';
+    return;
+  }
+
+  seances.forEach(s => {
+    const seanceEvals = evals.filter(ev => ev.seanceId === s.id);
+    const exosUniques = [...new Set(seanceEvals.map(ev => ev.exoId))];
+    const label = s.nom ? `${new Date(s.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'})} — ${s.nom}`
+                        : new Date(s.date+'T12:00:00').toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.style.marginBottom = '14px';
+
+    let exoTables = '';
+    exosUniques.forEach(exoId => {
+      const exo = exos.find(e => e.id == exoId); if (!exo) return;
+      const exoEvals = seanceEvals.filter(ev => ev.exoId == exoId)
+        .sort((a,b) => {
+          const va = a.valeur, vb = b.valeur;
+          return exo.sens === 'min' ? va - vb : vb - va;
+        });
+      let rows = exoEvals.map((ev, rank) => {
+        const j = joueurs[ev.joueurIdx]; if (!j) return '';
+        const ini = ((j.prenom||'')[0]||'').toUpperCase()+((j.nom||'')[0]||'').toUpperCase();
+        const medal = rank === 0 ? '🥇' : rank === 1 ? '🥈' : rank === 2 ? '🥉' : `${rank+1}.`;
+        return `<tr>
+          <td style="padding:8px 12px">${medal}</td>
+          <td style="padding:8px 12px">
+            <div style="display:flex;align-items:center;gap:8px">
+              <div class="player-avatar av-${ev.joueurIdx%8}" style="width:26px;height:26px;font-size:10px;margin:0;flex-shrink:0">${ini}</div>
+              <span style="font-size:13px">${j.prenom} ${j.nom}</span>
+            </div>
+          </td>
+          <td style="padding:8px 12px;font-weight:600;color:var(--red)">${ev.valeur} ${exo.unite}</td>
+          <td style="padding:8px 12px;font-size:11px;color:var(--muted)">${ev.note||''}</td>
+        </tr>`;
+      }).join('');
+
+      exoTables += `
+        <div style="margin-top:14px">
+          <div style="font-size:13px;font-weight:600;margin-bottom:8px;display:flex;align-items:center;gap:8px">
+            <span>${exo.nom}</span>
+            <span class="tag">${exo.unite}</span>
+          </div>
+          <div style="overflow-x:auto">
+            <table style="width:100%;border-collapse:collapse;font-size:13px">
+              <thead><tr style="background:var(--bg)">
+                <th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--muted)">#</th>
+                <th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--muted)">Joueur</th>
+                <th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--muted)">Résultat</th>
+                <th style="padding:8px 12px;text-align:left;font-size:11px;color:var(--muted)">Note</th>
+              </tr></thead>
+              <tbody>${rows}</tbody>
+            </table>
+          </div>
+        </div>`;
+    });
+
+    card.innerHTML = `
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:${exoTables?'0':'4px'}">
+        <div style="width:38px;height:38px;background:var(--red-light);border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <i class="ti ti-calendar" style="font-size:18px;color:var(--red)"></i>
+        </div>
+        <div>
+          <div style="font-size:14px;font-weight:600">${label}</div>
+          <div style="font-size:11px;color:var(--muted);margin-top:2px">${exosUniques.length} exercice(s) · ${seanceEvals.length} résultat(s)</div>
+        </div>
+      </div>
+      ${exoTables}
+    `;
+    wrap.appendChild(card);
+  });
+}
+
+loadData();
+</script>
+</body>
+</html>

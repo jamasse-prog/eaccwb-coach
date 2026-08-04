@@ -61,6 +61,15 @@ async function loadAllFromFirebase() {
 
 // Expose fbSet globally so ls() can call it
 window._fbSet = fbSet;
+
+// showLoadingOverlay defined here so it's available when loadAllFromFirebase() runs
+function showLoadingOverlay(show) {
+  const el = document.getElementById('loading-overlay');
+  if (el) el.style.display = show ? 'flex' : 'none';
+}
+
+// Start loading
+document.addEventListener('DOMContentLoaded', loadAllFromFirebase);
 </script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -1679,11 +1688,6 @@ document.getElementById('seance-modal').addEventListener('click', function(e) { 
   <div style="color:rgba(255,255,255,0.4);font-size:12px">Connexion à Firebase</div>
 </div>
 
-<script>
-function showLoadingOverlay(show) {
-  const el = document.getElementById('loading-overlay');
-  if (el) el.style.display = show ? 'flex' : 'none';
-}
-</script>
+<!-- showLoadingOverlay defined in Firebase script block -->
 </body>
 </html>

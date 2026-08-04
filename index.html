@@ -258,25 +258,33 @@ textarea{resize:none;height:76px}
     <!-- PAGE CLUB -->
     <div class="page" id="page-club">
       <div class="topbar">
-        <div><div class="topbar-title">Mon club</div><div class="topbar-sub">Informations générales</div></div>
+        <div><div class="topbar-title">Mon club</div><div class="topbar-sub">Identité du club</div></div>
       </div>
       <div class="content">
         <div class="info-banner"><i class="ti ti-cloud"></i> Les données sont synchronisées automatiquement avec Firebase — accessibles depuis tous vos appareils.</div>
-        <div class="card">
-          <div class="card-title">Informations du club</div>
-          <div class="card-sub">Ces infos apparaîtront sur tous vos rapports</div>
-          <div class="form-grid">
-            <div class="form-group full"><label>Nom du club</label><input id="c-nom" type="text" placeholder="ex : FC Les Aigles"></div>
-            <div class="form-group"><label>Catégorie</label>
-              <select id="c-cat"><option>U7</option><option>U8</option><option selected>U9</option><option>U10</option><option>U11</option><option>U12</option><option>U13</option></select>
+        <div class="card" style="max-width:480px">
+          <div class="card-title">Identité du club</div>
+          <div class="card-sub" style="margin-bottom:24px">Ces informations apparaissent dans la barre latérale et sur la vue parents</div>
+
+          <!-- Logo -->
+          <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:28px">
+            <div id="club-logo-wrap" style="width:100px;height:100px;border-radius:16px;overflow:hidden;border:2px solid var(--border);display:flex;align-items:center;justify-content:center;margin-bottom:12px;background:var(--bg)">
+              <img id="club-logo-img" src="" style="width:100%;height:100%;object-fit:contain;display:none">
+              <i class="ti ti-shield" id="club-logo-placeholder" style="font-size:40px;color:var(--muted)"></i>
             </div>
-            <div class="form-group"><label>Saison</label><input id="c-saison" type="text" placeholder="ex : 2025 / 2026"></div>
-            <div class="form-group"><label>Nom de l'entraîneur</label><input id="c-coach" type="text" placeholder="Prénom Nom"></div>
-            <div class="form-group full"><label>Objectifs de la saison</label>
-              <textarea id="c-obj" placeholder="ex : Travailler le jeu en petit espace, améliorer la prise de balle..."></textarea>
-            </div>
+            <label style="cursor:pointer;display:inline-flex;align-items:center;gap:6px;padding:7px 14px;border:1px solid var(--border);border-radius:8px;font-size:12px;font-weight:500;color:var(--muted);background:var(--white)">
+              <i class="ti ti-upload" style="font-size:14px"></i> Changer le logo
+              <input type="file" id="club-logo-input" accept="image/*" onchange="handleLogoUpload(event)" style="display:none">
+            </label>
           </div>
-          <div class="form-actions">
+
+          <!-- Nom du club -->
+          <div class="form-group full" style="margin-bottom:20px">
+            <label>Nom du club</label>
+            <input id="c-nom" type="text" placeholder="ex : EACCWB Cysoing" style="font-size:15px;font-weight:500">
+          </div>
+
+          <div class="form-actions" style="margin-top:0;padding-top:16px">
             <button class="btn btn-primary" onclick="saveClub()"><i class="ti ti-check"></i> Enregistrer</button>
           </div>
         </div>
@@ -686,22 +694,37 @@ function updateSidebar() {
 function loadClub() {
   const c = ls('club'); if (!c) return;
   document.getElementById('c-nom').value = c.nom || '';
-  document.getElementById('c-cat').value = c.cat || 'U9';
-  document.getElementById('c-saison').value = c.saison || '';
-  document.getElementById('c-coach').value = c.coach || '';
-  document.getElementById('c-obj').value = c.obj || '';
+  if (c.logo) {
+    document.getElementById('club-logo-img').src = c.logo;
+    document.getElementById('club-logo-img').style.display = '';
+    document.getElementById('club-logo-placeholder').style.display = 'none';
+  }
   updateSidebar();
 }
 function saveClub() {
-  ls('club', {
-    nom: document.getElementById('c-nom').value.trim(),
-    cat: document.getElementById('c-cat').value,
-    saison: document.getElementById('c-saison').value.trim(),
-    coach: document.getElementById('c-coach').value.trim(),
-    obj: document.getElementById('c-obj').value.trim()
-  });
+  const c = ls('club') || {};
+  c.nom = document.getElementById('c-nom').value.trim();
+  ls('club', c);
   updateSidebar();
   toast('Club enregistré ✓');
+}
+function handleLogoUpload(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const logo = e.target.result;
+    document.getElementById('club-logo-img').src = logo;
+    document.getElementById('club-logo-img').style.display = '';
+    document.getElementById('club-logo-placeholder').style.display = 'none';
+    const c = ls('club') || {};
+    c.logo = logo;
+    ls('club', c);
+    // Update sidebar logo too
+    const sbLogo = document.querySelector('.logo-badge img');
+    if (sbLogo) sbLogo.src = logo;
+    toast('Logo mis à jour ✓');
+  };
+  reader.readAsDataURL(file);
 }
 
 // ── JOUEURS ───────────────────────────────────────────────────

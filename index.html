@@ -210,6 +210,105 @@ textarea{resize:none;height:76px}
 .empty-icon{font-size:40px;margin-bottom:14px}
 .empty-text{font-size:14px;font-weight:500;margin-bottom:6px;color:var(--text)}
 .empty-sub{font-size:12px;margin-bottom:20px}
+
+/* ── MOBILE ────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  /* Cacher la sidebar, afficher nav en bas */
+  .sidebar { display: none; }
+  .main { margin-left: 0; }
+
+  /* Barre de navigation en bas */
+  .mobile-nav {
+    display: flex;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    background: #1a1a1a;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    z-index: 50;
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+  .mobile-nav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 10px 4px 8px;
+    color: rgba(255,255,255,0.5);
+    font-size: 10px;
+    font-weight: 500;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    gap: 4px;
+    transition: color .15s;
+  }
+  .mobile-nav-item i { font-size: 20px; }
+  .mobile-nav-item.active { color: #CC0000; }
+  .mobile-nav-item:hover { color: #fff; }
+
+  /* Topbar mobile */
+  .topbar {
+    padding: 0 16px;
+    height: 52px;
+  }
+  .topbar-title { font-size: 15px; }
+  .topbar-sub { display: none; }
+  .topbar-actions .btn span { display: none; } /* icônes seules */
+  .topbar-actions .btn { padding: 7px 10px; }
+
+  /* Contenu */
+  .content { padding: 16px; padding-bottom: 80px; }
+
+  /* Cards */
+  .card { padding: 16px; }
+
+  /* Formulaires en colonne unique */
+  .form-grid { grid-template-columns: 1fr; }
+  .form-group.full { grid-column: 1; }
+
+  /* Grille joueurs */
+  .players-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+
+  /* Stats */
+  .stat-row { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+
+  /* Tableaux scrollables */
+  .card { overflow-x: auto; }
+  table { min-width: 400px; }
+
+  /* Modal plein écran sur mobile */
+  .modal-overlay { align-items: flex-end; }
+  .modal {
+    width: 100%;
+    border-radius: 16px 16px 0 0;
+    padding: 24px 20px;
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+    max-height: 90vh;
+    overflow-y: auto;
+  }
+
+  /* Masquer les textes longs dans les exo cards */
+  .exo-desc { display: none; }
+
+  /* Saisie évaluation — inputs plus grands pour le terrain */
+  #ev-tbody input[type="number"] {
+    width: 80px;
+    font-size: 18px;
+    font-weight: 700;
+    padding: 10px 8px;
+    text-align: center;
+  }
+  #ev-tbody input[type="text"] { width: 120px; font-size: 12px; }
+
+  /* Table évaluation responsive */
+  #ev-table th:last-child,
+  #ev-table td:last-child { display: none; } /* cache colonne commentaire */
+}
+
+@media (min-width: 769px) {
+  .mobile-nav { display: none; }
+}
 </style>
 </head>
 <body>
@@ -670,14 +769,21 @@ function toast(msg) {
 function showPage(name) {
   document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
   document.getElementById('page-' + name).classList.add('active');
+  // Sidebar desktop
   document.querySelectorAll('.nav-item[data-page]').forEach(b => {
     b.classList.toggle('active', b.dataset.page === name);
   });
+  // Nav mobile bas
+  document.querySelectorAll('.mobile-nav-item[data-page]').forEach(b => {
+    b.classList.toggle('active', b.dataset.page === name);
+  });
   if (name === 'joueurs') renderJoueurs();
+  if (name === 'exercices') { if (!ls('exercices')) ls('exercices', EXOS_DEMO); renderExos(); }
+  if (name === 'evaluations') renderEvaluations();
   if (name === 'progression') initProgressionSelects();
   if (name === 'saisons') renderSaisons();
 }
-document.querySelectorAll('.nav-item[data-page]').forEach(b => {
+document.querySelectorAll('.nav-item[data-page], .mobile-nav-item[data-page]').forEach(b => {
   b.addEventListener('click', () => showPage(b.dataset.page));
 });
 
@@ -804,7 +910,10 @@ let currentSens = 'min';
 
 function getExos() {
   let e = ls('exercices');
-  if (!e) { e = EXOS_DEMO; ls('exercices', e); }
+  if (!e) {
+    e = EXOS_DEMO;
+    ls('exercices', e); // écrit en localStorage ET sync Firebase via ls()
+  }
   return e;
 }
 
@@ -1701,6 +1810,15 @@ document.getElementById('seance-modal').addEventListener('click', function(e) { 
 
 // ── Init appelé par Firebase (loadAllFromFirebase) ─────────
 </script>
+
+<!-- ── NAV MOBILE BAS ───────────────────────────────────────── -->
+<nav class="mobile-nav">
+  <button class="mobile-nav-item" data-page="club"><i class="ti ti-building"></i><span>Club</span></button>
+  <button class="mobile-nav-item" data-page="joueurs"><i class="ti ti-users"></i><span>Joueurs</span></button>
+  <button class="mobile-nav-item" data-page="evaluations"><i class="ti ti-clipboard-list"></i><span>Séances</span></button>
+  <button class="mobile-nav-item" data-page="exercices"><i class="ti ti-run"></i><span>Exercices</span></button>
+  <button class="mobile-nav-item" data-page="progression"><i class="ti ti-chart-line"></i><span>Stats</span></button>
+</nav>
 
 <div id="loading-overlay" style="
   position:fixed;inset:0;background:#1a1a1a;z-index:9999;

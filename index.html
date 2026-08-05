@@ -9,67 +9,18 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 <script>
-// ── Firebase config ───────────────────────────────────────────
-const firebaseConfig = {
-  apiKey: "AIzaSyACbMoaK9XWq74ZLW4ItPm7LEmMdDsy2Q8",
-  authDomain: "eaccwb.firebaseapp.com",
-  projectId: "eaccwb",
-  storageBucket: "eaccwb.firebasestorage.app",
-  messagingSenderId: "338558896424",
-  appId: "1:338558896424:web:95ba8d386347818f2ba81d",
-  measurementId: "G-4EGNYSHDPN"
-};
-firebase.initializeApp(firebaseConfig);
-const db = firebase.firestore();
-
-// ── Firebase helpers (accessibles globalement) ────────────────
-async function fbGet(key) {
-  try {
-    const snap = await db.collection('app').doc(key).get();
-    return snap.exists ? snap.data().value : null;
-  } catch(e) { console.warn('fbGet error', key, e); return null; }
+// Firebase init — fonctions appelées après chargement du DOM
+function initFirebase() {
+  firebase.initializeApp({
+    apiKey: "AIzaSyACbMoaK9XWq74ZLW4ItPm7LEmMdDsy2Q8",
+    authDomain: "eaccwb.firebaseapp.com",
+    projectId: "eaccwb",
+    storageBucket: "eaccwb.firebasestorage.app",
+    messagingSenderId: "338558896424",
+    appId: "1:338558896424:web:95ba8d386347818f2ba81d"
+  });
+  window.db = firebase.firestore();
 }
-
-async function fbSet(key, value) {
-  try {
-    await db.collection('app').doc(key).set({ value });
-  } catch(e) { console.warn('fbSet error', key, e); }
-}
-
-async function loadAllFromFirebase() {
-  showLoadingOverlay(true);
-  try {
-    const snap = await db.collection('app').get();
-    snap.forEach(d => {
-      try { localStorage.setItem(d.id, JSON.stringify(d.data().value)); } catch(e){}
-    });
-    console.log('Firebase data loaded:', snap.size, 'keys');
-  } catch(e) {
-    console.warn('Firebase load error, using localStorage', e);
-  } finally {
-    showLoadingOverlay(false);
-    initSaisonDefaut();
-    loadClub();
-    updateSidebar();
-    showPage('club');
-    document.getElementById('saison-modal').addEventListener('click', function(e) { if(e.target===this) closeSaisonModal(); });
-    document.getElementById('j-modal').addEventListener('click', function(e) { if(e.target===this) closeJModal(); });
-    document.getElementById('e-modal').addEventListener('click', function(e) { if(e.target===this) closeEModal(); });
-    document.getElementById('seance-modal').addEventListener('click', function(e) { if(e.target===this) closeSeanceModal(); });
-  }
-}
-
-// Expose fbSet globally so ls() can call it
-window._fbSet = fbSet;
-
-// showLoadingOverlay defined here so it's available when loadAllFromFirebase() runs
-function showLoadingOverlay(show) {
-  const el = document.getElementById('loading-overlay');
-  if (el) el.style.display = show ? 'flex' : 'none';
-}
-
-// Start loading
-document.addEventListener('DOMContentLoaded', loadAllFromFirebase);
 </script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -783,9 +734,7 @@ function showPage(name) {
   if (name === 'progression') initProgressionSelects();
   if (name === 'saisons') renderSaisons();
 }
-document.querySelectorAll('.nav-item[data-page], .mobile-nav-item[data-page]').forEach(b => {
-  b.addEventListener('click', () => showPage(b.dataset.page));
-});
+// Nav listeners attachés dans loadAllFromFirebase
 
 // ── Sidebar ───────────────────────────────────────────────────
 function updateSidebar() {
@@ -1808,16 +1757,65 @@ function restaurer(event) {
 
 document.getElementById('seance-modal').addEventListener('click', function(e) { if(e.target===this) closeSeanceModal(); });
 
-// ── Init appelé par Firebase (loadAllFromFirebase) ─────────
+// ── Firebase helpers ──────────────────────────────────────────
+async function fbGet(key) {
+  try {
+    const snap = await window.db.collection('app').doc(key).get();
+    return snap.exists ? snap.data().value : null;
+  } catch(e) { console.warn('fbGet error', key, e); return null; }
+}
+
+async function fbSet(key, value) {
+  try {
+    await window.db.collection('app').doc(key).set({ value });
+  } catch(e) { console.warn('fbSet error', key, e); }
+}
+
+window._fbSet = fbSet;
+
+function showLoadingOverlay(show) {
+  const el = document.getElementById('loading-overlay');
+  if (el) el.style.display = show ? 'flex' : 'none';
+}
+
+async function loadAllFromFirebase() {
+  showLoadingOverlay(true);
+  try {
+    initFirebase(); // défini dans le head
+    const snap = await window.db.collection('app').get();
+    snap.forEach(d => {
+      try { localStorage.setItem(d.id, JSON.stringify(d.data().value)); } catch(e){}
+    });
+    console.log('Firebase data loaded:', snap.size, 'keys');
+  } catch(e) {
+    console.warn('Firebase load error, using localStorage', e);
+  } finally {
+    showLoadingOverlay(false);
+    initSaisonDefaut();
+    loadClub();
+    updateSidebar();
+    showPage('club');
+    document.getElementById('j-modal').addEventListener('click', function(e) { if(e.target===this) closeJModal(); });
+    document.getElementById('e-modal').addEventListener('click', function(e) { if(e.target===this) closeEModal(); });
+    document.getElementById('saison-modal').addEventListener('click', function(e) { if(e.target===this) closeSaisonModal(); });
+    // Attacher les listeners de navigation (sidebar + mobile)
+    document.querySelectorAll('.nav-item[data-page], .mobile-nav-item[data-page]').forEach(b => {
+      b.addEventListener('click', () => showPage(b.dataset.page));
+    });
+  }
+}
+
+// Démarrage
+loadAllFromFirebase();
 </script>
 
 <!-- ── NAV MOBILE BAS ───────────────────────────────────────── -->
 <nav class="mobile-nav">
-  <button class="mobile-nav-item" data-page="club"><i class="ti ti-building"></i><span>Club</span></button>
-  <button class="mobile-nav-item" data-page="joueurs"><i class="ti ti-users"></i><span>Joueurs</span></button>
-  <button class="mobile-nav-item" data-page="evaluations"><i class="ti ti-clipboard-list"></i><span>Séances</span></button>
-  <button class="mobile-nav-item" data-page="exercices"><i class="ti ti-run"></i><span>Exercices</span></button>
-  <button class="mobile-nav-item" data-page="progression"><i class="ti ti-chart-line"></i><span>Stats</span></button>
+  <button class="mobile-nav-item" data-page="club" onclick="showPage('club')"><i class="ti ti-building"></i><span>Club</span></button>
+  <button class="mobile-nav-item" data-page="joueurs" onclick="showPage('joueurs')"><i class="ti ti-users"></i><span>Joueurs</span></button>
+  <button class="mobile-nav-item" data-page="evaluations" onclick="showPage('evaluations')"><i class="ti ti-clipboard-list"></i><span>Séances</span></button>
+  <button class="mobile-nav-item" data-page="exercices" onclick="showPage('exercices')"><i class="ti ti-run"></i><span>Exercices</span></button>
+  <button class="mobile-nav-item" data-page="progression" onclick="showPage('progression')"><i class="ti ti-chart-line"></i><span>Stats</span></button>
 </nav>
 
 <div id="loading-overlay" style="

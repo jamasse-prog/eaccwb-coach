@@ -712,6 +712,7 @@ function ls(k, v) {
 // ── Toast ─────────────────────────────────────────────────────
 function toast(msg) {
   const t = document.getElementById('toast');
+  if (!t) { console.log('Toast:', msg); return; }
   t.textContent = msg; t.classList.add('show');
   setTimeout(() => t.classList.remove('show'), 2500);
 }
@@ -1828,5 +1829,6 @@ loadAllFromFirebase();
 </div>
 
 <!-- showLoadingOverlay defined in Firebase script block -->
+<div class="toast" id="toast"></div>
 </body>
 </html>

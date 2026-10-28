@@ -647,6 +647,21 @@ textarea{resize:none;height:76px}
           <option value="points">Points</option>
         </select>
       </div>
+      <div class="form-group">
+        <label>Nombre de tentatives</label>
+        <select id="e-tent" onchange="document.getElementById('e-agr-wrap').style.display = this.value==='1' ? 'none' : ''">
+          <option value="1">1 (un seul résultat)</option>
+          <option value="2">2</option><option value="3">3</option><option value="4">4</option>
+          <option value="5">5</option><option value="6">6</option><option value="8">8</option><option value="10">10</option>
+        </select>
+      </div>
+      <div class="form-group" id="e-agr-wrap" style="display:none">
+        <label>Résultat retenu pour la progression</label>
+        <select id="e-agr">
+          <option value="somme">La somme des tentatives</option>
+          <option value="max">Le meilleur essai (max)</option>
+        </select>
+      </div>
       <div class="form-group full">
         <label>Le meilleur score c'est...</label>
         <div class="sens-selector">
@@ -696,7 +711,7 @@ textarea{resize:none;height:76px}
 // ── Données de démo exercices ─────────────────────────────────
 const EXOS_DEMO = [
   {id:1, nom:'Slalom entre les plots', desc:'6 plots espacés d\'1m, aller-retour le plus vite possible', cat:'Technique', unite:'secondes', sens:'min'},
-  {id:2, nom:'Jonglages consécutifs', desc:'Nombre de jonglages sans que le ballon touche le sol', cat:'Technique', unite:'répétitions', sens:'max'},
+  {id:2, nom:'Jonglages consécutifs', desc:'Nombre de jonglages sans que le ballon touche le sol', cat:'Technique', unite:'répétitions', tentatives:5, agregat:'somme', sens:'max'},
   {id:3, nom:'Tirs au but / 5', desc:'5 tirs, compter le nombre de buts marqués', cat:'Technique', unite:'buts', sens:'max'},
   {id:4, nom:'Sprint 20m', desc:'Sprint en ligne droite sur 20 mètres', cat:'Physique', unite:'secondes', sens:'min'},
 ];
@@ -931,6 +946,9 @@ function openEModal(reset = true) {
     document.getElementById('e-desc').value = '';
     document.getElementById('e-cat').value = 'Technique';
     document.getElementById('e-unite').value = 'secondes';
+    document.getElementById('e-tent').value = '1';
+    document.getElementById('e-agr').value = 'somme';
+    document.getElementById('e-agr-wrap').style.display = 'none';
     selectSens('min');
   }
   document.getElementById('e-modal').style.display = 'flex';
@@ -949,6 +967,9 @@ function editExo(id) {
   document.getElementById('e-desc').value = exo.desc || '';
   document.getElementById('e-cat').value = exo.cat;
   document.getElementById('e-unite').value = exo.unite;
+  document.getElementById('e-tent').value = String(exo.tentatives || 1);
+  document.getElementById('e-agr').value = exo.agregat || 'somme';
+  document.getElementById('e-agr-wrap').style.display = (exo.tentatives || 1) > 1 ? '' : 'none';
   selectSens(exo.sens);
   openEModal(false);
 }
@@ -960,6 +981,8 @@ function saveExo() {
     nom, desc: document.getElementById('e-desc').value.trim(),
     cat: document.getElementById('e-cat').value,
     unite: document.getElementById('e-unite').value,
+    tentatives: parseInt(document.getElementById('e-tent').value) || 1,
+    agregat: document.getElementById('e-agr').value,
     sens: currentSens
   };
   if (editingExoId) {
@@ -1210,6 +1233,7 @@ function renderGrille() {
   }
 
   const exo = getExos().find(e => e.id === exoId);
+  const nT = exo ? (exo.tentatives || 1) : 1;
   const joueurs = getJoueurs();
   const evals = getEvals();
   const seance = seances.find(s => s.id == seanceId);
@@ -1242,11 +1266,21 @@ function renderGrille() {
         </div>
       </td>
       <td style="padding:12px 18px;text-align:center">
+        ${nT > 1 ? `
+        <div style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap">
+          ${Array.from({length:nT}, (_, k) => `<input type="number" step="0.01" min="0" class="ev-tent-${i}"
+            value="${existing && existing.tentatives && existing.tentatives[k] != null ? existing.tentatives[k] : ''}"
+            placeholder="${k+1}" oninput="calcTent(${i})"
+            style="width:62px;text-align:center;font-size:14px;font-weight:600">`).join('')}
+        </div>
+        <div id="ev-agg-${i}" style="margin-top:6px;font-size:12px;color:var(--muted)"></div>
+        <input type="hidden" id="ev-val-${i}" value="${existing ? existing.valeur : ''}">
+        ` : `
         <input type="number" step="0.01" min="0"
           id="ev-val-${i}"
           value="${existing ? existing.valeur : ''}"
           placeholder="—"
-          style="width:100px;text-align:center;font-size:14px;font-weight:600">
+          style="width:100px;text-align:center;font-size:14px;font-weight:600">`}
       </td>
       <td style="padding:12px 18px;text-align:center">
         <input type="text"
@@ -1257,7 +1291,29 @@ function renderGrille() {
       </td>
     `;
     tbody.appendChild(tr);
+    if (nT > 1) calcTent(i);
   });
+}
+
+function currentGrilleExo() {
+  const id = parseInt(document.getElementById('ev-exo-select').value);
+  return getExos().find(e => e.id === id);
+}
+function tentValues(i) {
+  return Array.from(document.querySelectorAll('.ev-tent-' + i)).map(el => el.value === '' ? null : parseFloat(el.value));
+}
+function calcTent(i) {
+  const exo = currentGrilleExo(); if (!exo) return;
+  const vals = tentValues(i).filter(v => v !== null && !isNaN(v));
+  const box = document.getElementById('ev-agg-' + i);
+  const hid = document.getElementById('ev-val-' + i);
+  if (!vals.length) { box.innerHTML = ''; hid.value = ''; return; }
+  const somme = Math.round(vals.reduce((a, b) => a + b, 0) * 100) / 100;
+  const max = Math.max(...vals);
+  const main = (exo.agregat || 'somme') === 'max' ? max : somme;
+  hid.value = main;
+  const st = k => (exo.agregat || 'somme') === k ? 'font-weight:700;color:var(--red,#CC0000)' : '';
+  box.innerHTML = `<span style="${st('somme')}">Somme : ${somme}</span> &nbsp;·&nbsp; <span style="${st('max')}">Max : ${max}</span>`;
 }
 
 function saveGrille() {
@@ -1265,13 +1321,23 @@ function saveGrille() {
   const exoId = parseInt(document.getElementById('ev-exo-select').value);
   if (!seanceId || !exoId) return;
   const joueurs = getJoueurs();
+  const exo = getExos().find(e => e.id === exoId);
+  const nT = exo ? (exo.tentatives || 1) : 1;
   let evals = getEvals().filter(ev => !(ev.seanceId == seanceId && ev.exoId === exoId));
   let saved = 0;
   joueurs.forEach((j, i) => {
     const val = document.getElementById(`ev-val-${i}`)?.value;
     const note = document.getElementById(`ev-note-${i}`)?.value.trim();
     if (val !== '' && val !== null && val !== undefined) {
-      evals.push({ seanceId: parseInt(seanceId), exoId, joueurIdx: i, valeur: parseFloat(val), note: note||'' });
+      const ev = { seanceId: parseInt(seanceId), exoId, joueurIdx: i, valeur: parseFloat(val), note: note||'' };
+      if (nT > 1) {
+        const t = tentValues(i);
+        const ok = t.filter(v => v !== null && !isNaN(v));
+        ev.tentatives = t;
+        ev.somme = Math.round(ok.reduce((a, b) => a + b, 0) * 100) / 100;
+        ev.max = Math.max(...ok);
+      }
+      evals.push(ev);
       saved++;
     }
   });

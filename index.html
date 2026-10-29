@@ -659,7 +659,7 @@ textarea{resize:none;height:76px}
         <label>Résultat retenu pour la progression</label>
         <select id="e-agr">
           <option value="somme">La somme des tentatives</option>
-          <option value="max">Le meilleur essai (max)</option>
+          <option value="max">Le meilleur essai (selon le sens ci-dessous)</option>
         </select>
       </div>
       <div class="form-group full">
@@ -1310,10 +1310,12 @@ function calcTent(i) {
   if (!vals.length) { box.innerHTML = ''; hid.value = ''; return; }
   const somme = Math.round(vals.reduce((a, b) => a + b, 0) * 100) / 100;
   const max = Math.max(...vals);
-  const main = (exo.agregat || 'somme') === 'max' ? max : somme;
+  const min = Math.min(...vals);
+  const best = exo.sens === 'min' ? min : max;
+  const main = (exo.agregat || 'somme') === 'max' ? best : somme;
   hid.value = main;
   const st = k => (exo.agregat || 'somme') === k ? 'font-weight:700;color:var(--red,#CC0000)' : '';
-  box.innerHTML = `<span style="${st('somme')}">Somme : ${somme}</span> &nbsp;·&nbsp; <span style="${st('max')}">Max : ${max}</span>`;
+  box.innerHTML = `<span style="${st('somme')}">Somme : ${somme}</span> &nbsp;·&nbsp; <span style="${st('max')}">Meilleur (${exo.sens === 'min' ? 'min' : 'max'}) : ${best}</span>`;
 }
 
 function saveGrille() {
@@ -1336,6 +1338,7 @@ function saveGrille() {
         ev.tentatives = t;
         ev.somme = Math.round(ok.reduce((a, b) => a + b, 0) * 100) / 100;
         ev.max = Math.max(...ok);
+        ev.min = Math.min(...ok);
       }
       evals.push(ev);
       saved++;

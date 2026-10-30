@@ -1258,13 +1258,13 @@ function renderRecap() {
 
   const arrow = col => recapSort.col == col ? (recapSort.dir === 1 ? ' ▲' : ' ▼') : '';
   const th = 'padding:12px 14px;font-size:12px;font-weight:600;color:var(--muted);border-bottom:1px solid var(--border);cursor:pointer;white-space:nowrap;background:#fafafa';
-  let html = `<thead><tr><th style="${th};text-align:left" onclick="sortRecap('nom')">Joueur${arrow('nom')}</th>`;
+  let html = `<thead><tr><th style="${th};text-align:left;position:sticky;left:0;z-index:2;box-shadow:2px 0 4px -2px rgba(0,0,0,.15)" onclick="sortRecap('nom')">Joueur${arrow('nom')}</th>`;
   usedExos.forEach(e => {
     html += `<th style="${th};text-align:center" onclick="sortRecap('${e.id}')">${e.nom}<div style="font-weight:400;font-size:11px">${e.unite} ${e.sens === 'min' ? '↓' : '↑'}${arrow(e.id)}</div></th>`;
   });
   html += '</tr></thead><tbody>';
   rows.forEach(({ i, j }) => {
-    html += `<tr style="border-bottom:1px solid var(--border)"><td style="padding:10px 14px;font-size:13px;font-weight:600;white-space:nowrap">${j.prenom} ${j.nom}</td>`;
+    html += `<tr style="border-bottom:1px solid var(--border)"><td style="padding:10px 14px;font-size:13px;font-weight:600;white-space:nowrap;position:sticky;left:0;z-index:1;background:#fff;box-shadow:2px 0 4px -2px rgba(0,0,0,.15)">${j.prenom} ${j.nom}</td>`;
     usedExos.forEach(e => {
       const v = val(i, e.id);
       let style = 'color:var(--muted)', txt = '—';
@@ -1279,7 +1279,7 @@ function renderRecap() {
     });
     html += '</tr>';
   });
-  html += `<tr style="background:#fafafa"><td style="padding:10px 14px;font-size:12px;font-weight:600;color:var(--muted)">Moyenne équipe</td>`;
+  html += `<tr style="background:#fafafa"><td style="padding:10px 14px;font-size:12px;font-weight:600;color:var(--muted);position:sticky;left:0;z-index:1;background:#fafafa;box-shadow:2px 0 4px -2px rgba(0,0,0,.15)">Moyenne équipe</td>`;
   usedExos.forEach(e => {
     html += `<td style="padding:10px 14px;text-align:center;font-size:13px;font-weight:600;color:var(--muted)">${avg[e.id] === null ? '—' : Math.round(avg[e.id] * 100) / 100}</td>`;
   });

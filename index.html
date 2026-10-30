@@ -49,14 +49,16 @@ body{font-family:system-ui,-apple-system,sans-serif;background:var(--bg);color:v
 .nav-footer{padding:16px;border-top:1px solid rgba(255,255,255,0.1);font-size:11px;color:rgba(255,255,255,0.3);line-height:1.5}
 
 /* MAIN */
-.main{flex:1;margin-left:230px;display:flex;flex-direction:column;min-height:100vh}
-.page{display:none;flex-direction:column;flex:1}
+.main{flex:1;min-width:0;margin-left:230px;display:flex;flex-direction:column;min-height:100vh}
+.page{min-width:0;display:none;flex-direction:column;flex:1}
 .page.active{display:flex}
 .topbar{background:var(--white);border-bottom:1px solid var(--border);padding:0 32px;height:58px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;position:sticky;top:0;z-index:5}
 .topbar-title{font-size:16px;font-weight:600}
 .topbar-sub{font-size:12px;color:var(--muted);margin-top:1px}
 .topbar-actions{display:flex;gap:8px}
-.content{padding:28px 32px;flex:1}
+.content{min-width:0;padding:28px 32px;flex:1}
+.recap-scroll{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:auto;max-height:78vh;width:calc(100vw - 230px - 64px);max-width:100%}
+@media(max-width:768px){.recap-scroll{width:calc(100vw - 32px)}}
 
 /* BOUTONS */
 .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 18px;border-radius:8px;font-size:13px;font-weight:500;cursor:pointer;border:none;transition:all .15s;font-family:inherit}
@@ -451,7 +453,7 @@ textarea{resize:none;height:76px}
           <div class="section-header"><div class="section-title">Récapitulatif de la séance</div>
             <div style="font-size:12px;color:var(--muted)">Clique sur une colonne pour classer · <span style="color:#1a8a3c;font-weight:600">vert</span> = mieux que la moyenne, <span style="color:#CC0000;font-weight:600">rouge</span> = moins bien</div>
           </div>
-          <div style="background:#fff;border:1px solid var(--border);border-radius:14px;overflow-x:auto">
+          <div class="recap-scroll">
             <table id="ev-recap" style="width:100%;border-collapse:collapse"></table>
           </div>
         </div>
